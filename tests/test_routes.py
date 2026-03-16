@@ -9,8 +9,9 @@ import os
 import logging
 from unittest import TestCase
 from tests.factories import AccountFactory
-from service.common import status  # HTTP Status Codes
-from service.models import db, Account, init_db
+from service.common import status
+from service.models import Account
+from service.database import db, init_db
 from service.routes import app
 
 DATABASE_URI = os.getenv(
@@ -31,24 +32,34 @@ class TestAccountService(TestCase):
         """Run once before all tests"""
         app.config["TESTING"] = True
         app.config["DEBUG"] = False
-        app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URI
+        app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///:memory:'
         app.logger.setLevel(logging.CRITICAL)
-        init_db(app)
+        
+        with app.app_context():
+            init_db(app)
+            # Asegurar que las tablas se crean
+            db.create_all()
 
     @classmethod
     def tearDownClass(cls):
-        """Runs once before test suite"""
+        """Runs once after test suite"""
+        with app.app_context():
+            db.session.remove()
+            db.drop_all()
 
     def setUp(self):
         """Runs before each test"""
-        db.session.query(Account).delete()  # clean up the last tests
-        db.session.commit()
-
+        with app.app_context():
+            # Asegurar que la tabla existe antes de limpiar
+            db.create_all()
+            db.session.query(Account).delete()
+            db.session.commit()
         self.client = app.test_client()
 
     def tearDown(self):
         """Runs once after each test case"""
-        db.session.remove()
+        with app.app_context():
+            db.session.remove()
 
     ######################################################################
     #  H E L P E R   M E T H O D S
@@ -113,6 +124,17 @@ class TestAccountService(TestCase):
         response = self.client.post(BASE_URL, json={"name": "not enough data"})
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+    def test_get_account(self):
+        """It should Read a single Account"""
+        account = self._create_accounts(1)[0]
+        resp = self.client.get(
+            f"{BASE_URL}/{account.id}", content_type="application/json"
+        )
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(data["name"], account.name)
+
+
     def test_unsupported_media_type(self):
         """It should not Create an Account when sending the wrong media type"""
         account = AccountFactory()
@@ -123,4 +145,26 @@ class TestAccountService(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
-    # ADD YOUR TEST CASES HERE ...
+    def test_read_an_account(self):
+        """It should Read a single Account"""
+        # Crear una cuenta primero
+        test_account = AccountFactory()
+        response = self.client.post(BASE_URL, json=test_account.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        
+        # Obtener el ID de la cuenta creada
+        new_account = response.get_json()
+        account_id = new_account["id"]
+        
+        # Ahora leer esa cuenta específica
+        response = self.client.get(f"{BASE_URL}/{account_id}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Verificar que los datos coinciden
+        data = response.get_json()
+        self.assertEqual(data["name"], test_account.name)
+
+    def test_account_not_found(self):
+        """It should not Read an Account that does not exist"""
+        response = self.client.get(f"{BASE_URL}/0")
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
