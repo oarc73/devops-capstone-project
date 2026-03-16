@@ -8,11 +8,23 @@ import sys
 from flask import Flask
 from service import config
 from service.common import log_handlers
-from .database import db, init_db  # Import db and init_db
+from .database import db, init_db
+from flask_talisman import Talisman
+from flask_cors import CORS
 
 # Create Flask application
 app = Flask(__name__)
 app.config.from_object(config)
+
+# Configurar Talisman para headers de seguridad
+talisman = Talisman(
+    app,
+    force_https=False,  # Deshabilitar HTTPS forzado para desarrollo
+    content_security_policy=None,  # Deshabilitar CSP para simplificar
+)
+
+# Configurar CORS
+CORS(app)
 
 # Inicializar base de datos (esto SOLO se ejecuta una vez)
 init_db(app)
