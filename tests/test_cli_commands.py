@@ -1,23 +1,24 @@
 """
-CLI Command Extensions for Flask
+Test CLI Commands
 """
 import os
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 from click.testing import CliRunner
+from service import app
 from service.common.cli_commands import db_create
 
 
-class TestFlaskCLI(TestCase):
-    """Test Flask CLI Commands"""
+class TestCLICommands(TestCase):
+    """Test CLI Commands"""
 
     def setUp(self):
         self.runner = CliRunner()
+        app.config["SQLALCHEMY_DATABASE_URI"] = 'sqlite:///:memory:'
+        app.config["TESTING"] = True
 
-    @patch('service.common.cli_commands.db')
-    def test_db_create(self, db_mock):
+    def test_db_create(self):
         """It should call the db-create command"""
-        db_mock.return_value = MagicMock()
-        with patch.dict(os.environ, {"FLASK_APP": "service:app"}, clear=True):
-            result = self.runner.invoke(db_create)
-            self.assertEqual(result.exit_code, 0)
+        with app.app_context():
+            result = self.runner.invoke(db_create, [])
+            self.assertEqual(result.exit_code, 0, f"Command failed with output: {result.output}")
