@@ -5,21 +5,20 @@ All of the models are stored in this module
 """
 import logging
 from datetime import date
-from flask_sqlalchemy import SQLAlchemy
+from .database import db
 
 logger = logging.getLogger("flask.app")
 
 # Create the SQLAlchemy object to be initialized later in init_db()
-db = SQLAlchemy()
 
 
 class DataValidationError(Exception):
     """Used for an data validation errors when deserializing"""
 
 
-def init_db(app):
-    """Initialize the SQLAlchemy app"""
-    Account.init_db(app)
+#def init_db(app):
+#    """Initialize the SQLAlchemy app"""
+#    Account.init_db(app)
 
 
 ######################################################################
@@ -53,15 +52,17 @@ class PersistentBase:
         db.session.delete(self)
         db.session.commit()
 
-    @classmethod
-    def init_db(cls, app):
-        """Initializes the database session"""
-        logger.info("Initializing database")
-        cls.app = app
-        # This is where we initialize SQLAlchemy from the Flask app
-        db.init_app(app)
-        app.app_context().push()
-        db.create_all()  # make our sqlalchemy tables
+    # @classmethod
+    # def init_db(cls, app):
+    #    """Initializes the database session"""
+    #    cls.app = app
+        
+        # Verificar si db ya está inicializado para este app
+    #    if not hasattr(app, 'extensions') or 'sqlalchemy' not in app.extensions:
+    #        db.init_app(app)
+        
+    #    with app.app_context():
+    #        db.create_all()
 
     @classmethod
     def all(cls):
