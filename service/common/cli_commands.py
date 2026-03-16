@@ -14,16 +14,13 @@ from service.database import db, init_db
 def db_create():
     """Creates the database tables"""
     current_app.logger.info("Creating database tables...")
-    
     try:
         # Inicializar la base de datos
         init_db(current_app)
-        
         # Crear todas las tablas
         with current_app.app_context():
             db.create_all()
             db.session.commit()
-        
         current_app.logger.info("Database tables created successfully")
         return 0
     except Exception as e:

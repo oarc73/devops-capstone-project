@@ -9,21 +9,15 @@ from .database import db
 
 logger = logging.getLogger("flask.app")
 
-# Create the SQLAlchemy object to be initialized later in init_db()
-
 
 class DataValidationError(Exception):
     """Used for an data validation errors when deserializing"""
 
-
-#def init_db(app):
-#    """Initialize the SQLAlchemy app"""
-#    Account.init_db(app)
-
-
 ######################################################################
 #  P E R S I S T E N T   B A S E   M O D E L
 ######################################################################
+
+
 class PersistentBase:
     """Base class added persistent methods"""
 
@@ -52,18 +46,6 @@ class PersistentBase:
         db.session.delete(self)
         db.session.commit()
 
-    # @classmethod
-    # def init_db(cls, app):
-    #    """Initializes the database session"""
-    #    cls.app = app
-        
-        # Verificar si db ya está inicializado para este app
-    #    if not hasattr(app, 'extensions') or 'sqlalchemy' not in app.extensions:
-    #        db.init_app(app)
-        
-    #    with app.app_context():
-    #        db.create_all()
-
     @classmethod
     def all(cls):
         """Returns all of the records in the database"""
@@ -84,7 +66,6 @@ class Account(db.Model, PersistentBase):
     """
     Class that represents an Account
     """
-
     app = None
 
     # Table Schema

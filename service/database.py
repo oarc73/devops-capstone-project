@@ -9,10 +9,10 @@ db = SQLAlchemy()
 # Variable para rastrear si ya se inicializó
 _initialized = False
 
+
 def init_db(app):
     """Initialize database with app (solo una vez)"""
     global _initialized
-    
     if not _initialized:
         app.logger.info("Initializing database for the first time")
         db.init_app(app)

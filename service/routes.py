@@ -60,6 +60,8 @@ def create_accounts():
 ######################################################################
 # READ AN ACCOUNT
 ######################################################################
+
+
 @app.route("/accounts/<int:account_id>", methods=["GET"])
 def get_accounts(account_id):
     """
@@ -70,12 +72,9 @@ def get_accounts(account_id):
 
     # Buscar la cuenta
     account = Account.find(account_id)
-    
     # Si no existe, devolver 404
     if not account:
-        abort(status.HTTP_404_NOT_FOUND, 
-              f"Account with id '{account_id}' was not found.")
-    
+        abort(status.HTTP_404_NOT_FOUND, f"Account with id '{account_id}' was not found.")
     # Si existe, serializar y devolver
     return account.serialize(), status.HTTP_200_OK
 
