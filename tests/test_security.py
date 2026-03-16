@@ -17,17 +17,18 @@ class TestSecurity(unittest.TestCase):
     def test_security_headers(self):
         """It should return security headers"""
         resp = self.app.get("/")
-        # Headers estándar que Talisman siempre incluye
+        # Headers que Talisman 1.0.0 incluye
         self.assertIn("X-Frame-Options", resp.headers)
         self.assertEqual(resp.headers["X-Frame-Options"], "SAMEORIGIN")
         
         self.assertIn("X-Content-Type-Options", resp.headers)
         self.assertEqual(resp.headers["X-Content-Type-Options"], "nosniff")
         
-        # X-XSS-Protection ya no está presente en versiones modernas de Talisman
-        # En su lugar, verificamos otros headers modernos
-        self.assertIn("Permissions-Policy", resp.headers)
+        self.assertIn("X-XSS-Protection", resp.headers)
+        self.assertEqual(resp.headers["X-XSS-Protection"], "1; mode=block")
+        
         self.assertIn("Referrer-Policy", resp.headers)
+        self.assertEqual(resp.headers["Referrer-Policy"], "strict-origin-when-cross-origin")
 
     def test_cors_headers(self):
         """It should return CORS headers"""
