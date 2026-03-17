@@ -1,0 +1,57 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: clone-lint-test
+spec:
+  params:
+    - name: repo-url
+      type: string
+    - name: revision
+      type: string
+      default: main
+    - name: DATABASE_URI
+      type: string
+  results:
+    - name: commit-sha
+      description: The commit SHA of the cloned repository
+  workspaces:
+    - name: source
+  steps:
+    - name: clone
+      image: alpine/git
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        echo "Clonando repositorio $(params.repo-url) en $(pwd)..."
+        git clone --depth 1 --branch $(params.revision) $(params.repo-url) .
+        echo "Clone completado. Contenido:"
+        ls -la
+        # Capturar el commit SHA y guardarlo como resultado
+        git rev-parse HEAD > $(results.commit-sha.path)
+
+    - name: lint
+      image: python:3.9-slim
+      workingDir: $(workspaces.source.path)
+      script: |
+        #!/bin/sh
+        echo "Instalando dependencias para linting..."
+        pip install flake8
+        echo "Ejecutando flake8 en: $(pwd)"
+        ls -la
+        flake8 service --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 service --count --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: test
+      image: python:3.9-slim
+      workingDir: /workspace/source
+      env:
+        - name: FLASK_APP
+          value: "service:app"
+        - name: DATABASE_URI
+          value: $(params.DATABASE_URI)
+      script: |
+        #!/bin/sh
+        echo "Instalando dependencias para pruebas..."
+        pip install -r requirements.txt
+        echo "Ejecutando pruebas en: $(pwd)"
+        nosetests

@@ -1,38 +1,53 @@
-#
-# This pipeline needs the following tasks from Tekton Catalog
-#   - git-clone
-#   - flake8
-#
----
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
-metadata:  
-  name: cd-pipeline
+metadata:
+  name: accounts-pipeline
 spec:
-  workspaces:
-    - name: pipeline-workspace
   params:
     - name: repo-url
-    - name: branch
+      type: string
+    - name: revision
+      type: string
       default: main
+    - name: DATABASE_URI
+      type: string
+  workspaces:
+    - name: workspace
   tasks:
-    - name: init
+    - name: clone-lint-test
+      taskRef:
+        name: clone-lint-test
+      params:
+        - name: repo-url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+        - name: DATABASE_URI
+          value: $(params.DATABASE_URI)
       workspaces:
         - name: source
-          workspace: pipeline-workspace          
-      taskRef:
-        name: cleanup
+          workspace: workspace
 
-    - name: clone
-      workspaces:
-        - name: output
-          workspace: pipeline-workspace          
+    - name: build-image
       taskRef:
-        name: git-clone
-      params:
-      - name: url
-        value: $(params.repo-url)
-      - name: revision
-        value: $(params.branch)
+        name: buildah
       runAfter:
-        - init
+        - clone-lint-test
+      params:
+        - name: IMAGE
+          value: us.icr.io/sn-labs-oreyesc/accounts:$(tasks.clone-lint-test.results.commit-sha)
+      workspaces:
+        - name: source
+          workspace: workspace
+
+    - name: deploy
+      taskRef:
+        name: openshift-client
+      runAfter:
+        - build-image
+      params:
+        - name: ARGS
+          value:
+            - apply
+            - -f
+            - deploy/
