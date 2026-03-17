@@ -1,0 +1,22 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: buildah-unprivileged
+spec:
+  params:
+    - name: IMAGE
+      type: string
+  workspaces:
+    - name: source
+  steps:
+    - name: build
+      image: quay.io/buildah/stable:v1.23.0
+      workingDir: $(workspaces.source.path)
+      securityContext:
+        capabilities:
+          add: ["SETFCAP"]
+      script: |
+        #!/bin/sh
+        echo "Construyendo imagen $(params.IMAGE)"
+        buildah bud --format=docker -t $(params.IMAGE) .
+        buildah push $(params.IMAGE)
