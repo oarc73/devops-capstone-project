@@ -30,7 +30,7 @@ spec:
 
     - name: build-image
       taskRef:
-        name: buildah
+        name: buildah-unprivileged
       runAfter:
         - clone-lint-test
       params:
