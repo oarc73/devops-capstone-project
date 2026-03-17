@@ -1,0 +1,17 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: accounts-pipeline-run
+spec:
+  pipelineRef:
+    name: accounts-pipeline
+  params:
+    - name: repo-url
+      value: https://github.com/oarc73/devops-capstone-project
+    - name: revision
+      value: main
+    - name: DATABASE_URI
+      value: postgresql://postgres:postgres@postgresql:5432/testdb
+  workspaces:
+    - name: workspace
+      emptyDir: {}
